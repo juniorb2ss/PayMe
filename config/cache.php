@@ -85,6 +85,11 @@ return [
             'endpoint' => env('DYNAMODB_ENDPOINT'),
         ],
 
+        'currency-rates' => [
+            'driver' => 'redis',
+            'connection' => 'cache',
+        ],
+
     ],
 
     /*

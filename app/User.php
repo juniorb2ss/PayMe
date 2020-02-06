@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Services\CurrencyLayerRatesCache;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -63,15 +64,19 @@ class User extends Authenticatable implements MustVerifyEmail
     // Get user payments stats
     public function getStats()
     {
+        /** @var CurrencyLayerRatesCache $reverse_rates */
+        $reverse_rates = app(CurrencyLayerRatesCache::class);
+
         $stats = [];
         // Calculate total sales
         $stats['totalSales'] = $this->payments()->notRefunded()->get()->groupBy('currency')->map(function ($item) {
             return $item->sum(function ($payment) {
                 return $payment->amount;
             });
-        })->map(function ($amount, $currency) {
+        })->map(function ($amount, $currency) use ($reverse_rates) {
             // convert all earnings to USD
-            $reverse_rates = cache('currency_rates');
+            $reverse_rates = $reverse_rates->rates();
+
             return $amount * $reverse_rates[$currency];
         })->sum();
 
@@ -80,9 +85,10 @@ class User extends Authenticatable implements MustVerifyEmail
             return $item->sum(function ($payment) {
                 return $payment->amount - $payment->application_fee_amount;
             });
-        })->map(function ($amount, $currency) {
+        })->map(function ($amount, $currency) use ($reverse_rates) {
             // convert all earnings to USD
-            $reverse_rates = cache('currency_rates');
+            $reverse_rates = $reverse_rates->rates();
+
             return $amount * $reverse_rates[$currency];
         })->sum();
 
@@ -92,9 +98,10 @@ class User extends Authenticatable implements MustVerifyEmail
             return $item->sum(function ($payment) {
                 return $payment->amount - $payment->application_fee_amount;
             });
-        })->map(function ($amount, $currency) {
+        })->map(function ($amount, $currency) use ($reverse_rates) {
             // convert all earnings to USD
-            $reverse_rates = cache('currency_rates');
+            $reverse_rates = $reverse_rates->rates();
+
             return $amount * $reverse_rates[$currency];
         })->sum();
 
@@ -106,9 +113,10 @@ class User extends Authenticatable implements MustVerifyEmail
             return $item->sum(function ($payment) {
                 return $payment->application_fee_amount;
             });
-        })->map(function ($amount, $currency) {
+        })->map(function ($amount, $currency) use ($reverse_rates) {
             // convert all earnings to USD
-            $reverse_rates = cache('currency_rates');
+            $reverse_rates = $reverse_rates->rates();
+
             return $amount * $reverse_rates[$currency];
         })->sum();
 
